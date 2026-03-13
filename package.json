@@ -9,7 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@auth/core": "^0.34.3",
+    "@line/bot-sdk": "^10.6.0",
+    "googleapis": "^171.4.0",
     "next": "16.1.6",
+    "next-auth": "^4.24.13",
+    "nodemailer": "^7.0.13",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },
