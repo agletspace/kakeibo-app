@@ -31,24 +31,6 @@ export default function Home() {
     }
   };
 
-  const testLineNotify = async () => {
-    const res = await fetch("/api/line/notify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "monthly" }),
-    });
-    const data = await res.json();
-    alert(JSON.stringify(data));
-  };
-
-  if (status === "loading") {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-gray-500">読み込み中...</p>
-      </div>
-    );
-  }
-
   if (!session) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-6">
@@ -87,12 +69,6 @@ export default function Home() {
           <p className="text-xs text-gray-400">Gmailから自動取得</p>
         </div>
         <div className="flex items-center gap-3">
-          <span
-            onClick={testLineNotify}
-            className="text-xs text-green-600 hover:text-green-800 cursor-pointer"
-          >
-            LINE通知テスト
-          </span>
           <span
             onClick={() => signOut()}
             className="text-xs text-gray-400 hover:text-gray-600 cursor-pointer"
