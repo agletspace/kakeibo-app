@@ -1,59 +1,61 @@
-"use client"
+"use client";
 
-import { useSession, signIn, signOut } from "next-auth/react"
-import { useEffect, useState } from "react"
-import { ParsedEmail, parseEmails, filterByCategory, calcMonthlyTotal, deduplicateEmails } from "@/lib/parseEmails"
+import { useSession, signIn, signOut } from "next-auth/react";
+import { useEffect, useState } from "react";
+import { AnalyzedEmail } from "@/lib/geminiAnalyzer";
 
 export default function Home() {
-  const { data: session, status } = useSession()
-  const [activeTab, setActiveTab] = useState<"expenses" | "orders">("expenses")
-  const [emails, setEmails] = useState<ParsedEmail[]>([])
-  const [loading, setLoading] = useState(false)
+  const { data: session, status } = useSession();
+  const [activeTab, setActiveTab] = useState<"expenses" | "orders">("expenses");
+  const [emails, setEmails] = useState<AnalyzedEmail[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (session) {
-      fetchEmails()
+      fetchEmails();
     }
-  }, [session])
+  }, [session]);
 
   const fetchEmails = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const res = await fetch("/api/gmail")
-      const data = await res.json()
+      const res = await fetch("/api/gmail");
+      const data = await res.json();
       if (data.emails) {
-        setEmails(deduplicateEmails(parseEmails(data.emails)))
+        setEmails(data.emails);
       }
     } catch (error) {
-      console.error("Error fetching emails:", error)
+      console.error("Error fetching emails:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const testLineNotify = async () => {
     const res = await fetch("/api/line/notify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "monthly" }),
-    })
-    const data = await res.json()
-    alert(JSON.stringify(data))
-  }
+    });
+    const data = await res.json();
+    alert(JSON.stringify(data));
+  };
 
   if (status === "loading") {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-gray-500">読み込み中...</p>
       </div>
-    )
+    );
   }
 
   if (!session) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-6">
         <div className="text-center">
-          <h1 className="text-2xl font-medium text-gray-800 mb-2">家計簿アプリ</h1>
+          <h1 className="text-2xl font-medium text-gray-800 mb-2">
+            家計簿アプリ
+          </h1>
           <p className="text-gray-500 text-sm">Gmailと連携して家計を自動管理</p>
         </div>
         <button
@@ -63,15 +65,20 @@ export default function Home() {
           Googleでログイン
         </button>
       </div>
-    )
+    );
   }
 
-  const monthlyTotal = calcMonthlyTotal(emails)
-  const deliveryEmails = filterByCategory(emails, "delivery")
-  const expenseEmails = emails.filter(e =>
-    ["electricity", "gas", "ntt", "internet"].includes(e.category)
-  )
-
+  const monthlyTotal = emails
+    .filter(
+      (e) =>
+        ["electricity", "gas", "ntt", "internet"].includes(e.category) &&
+        e.amount,
+    )
+    .reduce((sum, e) => sum + (e.amount || 0), 0);
+  const deliveryEmails = emails.filter((e) => e.category === "delivery");
+  const expenseEmails = emails.filter((e) =>
+    ["electricity", "gas", "ntt", "internet"].includes(e.category),
+  );
   return (
     <div className="max-w-md mx-auto p-4 min-h-screen">
       <div className="flex justify-between items-center mb-4 pb-3 border-b border-gray-200">
@@ -131,16 +138,22 @@ export default function Home() {
         <OrdersTab emails={deliveryEmails} />
       )}
     </div>
-  )
+  );
 }
 
-function ExpensesTab({ emails, monthlyTotal }: { emails: ParsedEmail[], monthlyTotal: number }) {
-  const categoryLabel: Record<string, { label: string, icon: string }> = {
+function ExpensesTab({
+  emails,
+  monthlyTotal,
+}: {
+  emails: AnalyzedEmail[];
+  monthlyTotal: number;
+}) {
+  const categoryLabel: Record<string, { label: string; icon: string }> = {
     electricity: { label: "電気代", icon: "⚡" },
     gas: { label: "ガス代", icon: "🔥" },
     ntt: { label: "NTT・携帯", icon: "📱" },
     internet: { label: "光回線", icon: "📡" },
-  }
+  };
 
   return (
     <div>
@@ -153,18 +166,25 @@ function ExpensesTab({ emails, monthlyTotal }: { emails: ParsedEmail[], monthlyT
         </div>
         <div className="bg-gray-50 rounded-lg p-3">
           <p className="text-xs text-gray-500 mb-1">件数</p>
-          <p className="text-xl font-medium text-green-600">{emails.length}件</p>
+          <p className="text-xl font-medium text-green-600">
+            {emails.length}件
+          </p>
         </div>
       </div>
 
       {emails.length === 0 ? (
         <div className="text-center py-8">
-          <p className="text-gray-400 text-sm">該当するメールが見つかりませんでした</p>
+          <p className="text-gray-400 text-sm">
+            該当するメールが見つかりませんでした
+          </p>
         </div>
       ) : (
         <div className="flex flex-col gap-2">
           {emails.map((email, i) => (
-            <div key={i} className="bg-white border border-gray-100 rounded-lg p-3 flex items-center gap-3">
+            <div
+              key={i}
+              className="bg-white border border-gray-100 rounded-lg p-3 flex items-center gap-3"
+            >
               <div className="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center text-base flex-shrink-0">
                 {categoryLabel[email.category]?.icon || "📄"}
               </div>
@@ -178,18 +198,20 @@ function ExpensesTab({ emails, monthlyTotal }: { emails: ParsedEmail[], monthlyT
                 </span>
               </div>
               <p className="text-sm font-medium text-gray-800">
-                {email.amount ? `¥${email.amount.toLocaleString()}` : "金額不明"}
+                {email.amount
+                  ? `¥${email.amount.toLocaleString()}`
+                  : "金額不明"}
               </p>
             </div>
           ))}
         </div>
       )}
     </div>
-  )
+  );
 }
 
-function OrdersTab({ emails }: { emails: ParsedEmail[] }) {
-  const totalAmount = emails.reduce((sum, e) => sum + (e.amount || 0), 0)
+function OrdersTab({ emails }: { emails: AnalyzedEmail[] }) {
+  const totalAmount = emails.reduce((sum, e) => sum + (e.amount || 0), 0);
 
   return (
     <div>
@@ -208,12 +230,16 @@ function OrdersTab({ emails }: { emails: ParsedEmail[] }) {
 
       {emails.length === 0 ? (
         <div className="text-center py-8">
-          <p className="text-gray-400 text-sm">該当するメールが見つかりませんでした</p>
+          <p className="text-gray-400 text-sm">
+            該当するメールが見つかりませんでした
+          </p>
         </div>
       ) : (
         <div className="flex flex-col gap-2">
           {emails.map((email, i) => (
-            <div key={i} className="bg-white border border-gray-100 rounded-lg p-3"
+            <div
+              key={i}
+              className="bg-white border border-gray-100 rounded-lg p-3"
               style={{ borderLeft: "2px solid #1D9E75" }}
             >
               <div className="flex justify-between items-start mb-2">
@@ -221,10 +247,14 @@ function OrdersTab({ emails }: { emails: ParsedEmail[] }) {
                   <p className="text-sm font-medium text-gray-800">
                     {email.productName || email.subject}
                   </p>
-                  <p className="text-xs text-gray-400">{email.shop || email.from}</p>
+                  <p className="text-xs text-gray-400">
+                    {email.shop || email.from}
+                  </p>
                 </div>
                 <p className="text-sm font-medium text-gray-800">
-                  {email.amount ? `¥${email.amount.toLocaleString()}` : "金額不明"}
+                  {email.amount
+                    ? `¥${email.amount.toLocaleString()}`
+                    : "金額不明"}
                 </p>
               </div>
               <div className="flex justify-between items-center">
@@ -232,7 +262,9 @@ function OrdersTab({ emails }: { emails: ParsedEmail[] }) {
                   Gmail取得
                 </span>
                 <p className="text-xs text-gray-400">
-                  {email.deliveryDate ? `${email.deliveryDate} お届け予定` : email.date}
+                  {email.deliveryDate
+                    ? `${email.deliveryDate} お届け予定`
+                    : email.date}
                 </p>
               </div>
             </div>
@@ -240,5 +272,5 @@ function OrdersTab({ emails }: { emails: ParsedEmail[] }) {
         </div>
       )}
     </div>
-  )
+  );
 }
