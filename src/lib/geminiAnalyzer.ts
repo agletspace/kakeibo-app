@@ -35,16 +35,16 @@ export async function analyzeEmailWithGemini(
 - gas: ガス会社からの請求メール
 - ntt: NTT・携帯・スマホの請求メール
 - internet: 光回線・プロバイダの請求メール
-- delivery: 通販の注文確認・発送・お届けメール
+- delivery: 通販の注文確認・発送・お届けメール（お買上げ計・合計金額を取得）
 - unknown: 上記以外
 
 【返却形式】
 {
   "category": "カテゴリ名",
-  "amount": 金額を数値で（不明な場合はnull）,
-  "deliveryDate": "配送予定日を○月○日の形式で（ない場合はnull）",
-  "productName": "商品名（通販の場合のみ・ない場合はnull）",
-  "shop": "ショップ名（通販の場合のみ・ない場合はnull）"
+  "amount": 合計金額・お買上げ計・請求金額・ご請求額を数値のみで（不明な場合はnull）,
+  "deliveryDate": "配送予定日・お届け日・配送指定日を○月○日の形式に変換して（ない場合はnull）",
+  "productName": "商品名・店舗名・ブランド名（通販の場合のみ・ない場合はnull）",
+  "shop": "ショップ名・送信元店舗名（通販の場合のみ・ない場合はnull）"
 }
 
 【メール情報】
